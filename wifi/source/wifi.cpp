@@ -2,14 +2,15 @@
 
 #include "hypha/plugins/wifi/wifi.h"
 
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+
 #include <Poco/ClassLibrary.h>
 
 #include <QtCore/QJsonArray>
 #include <QtCore/QJsonDocument>
 #include <QtCore/QJsonObject>
 #include <QtCore/QProcess>
-
-#include <hypha/plugin/hyphabaseplugin.h>
 
 using namespace hypha::plugin;
 using namespace hypha::plugin::wifi;
@@ -26,14 +27,30 @@ void Wifi::doWork() {
   QString output(process.readAllStandardOutput());
 
   // output to json string
-  QJsonDocument document;
-  QJsonArray devices = QJsonArray::fromStringList(output.split("\n"));
-  QJsonObject object;
-  object.insert("source", QJsonValue(QString::fromStdString(getId())));
-  object.insert("devices", devices);
-  object.insert("devicetype", QJsonValue("wifi"));
-  document.setObject(object);
-  sendMessage(document.toJson().data());
+
+  std::stringstream ss(output.toStdString());
+  std::istream_iterator<std::string> begin(ss);
+  std::istream_iterator<std::string> end;
+  std::vector<std::string> devices(begin, end);
+  std::copy(devices.begin(), devices.end(),
+            std::ostream_iterator<std::string>(std::cout, "\n"));
+
+  boost::property_tree::ptree devices_node;
+
+  for (auto &dev : devices) {
+    boost::property_tree::ptree dev_node;
+    dev_node.put("", dev);
+    devices_node.push_back(std::make_pair("", dev_node));
+  }
+
+  boost::property_tree::ptree sendobject;
+  sendobject.put("source", getId());
+  sendobject.add_child("devices", devices_node);
+  sendobject.put("devicetype", "wifi");
+
+  std::stringstream ssso;
+  boost::property_tree::write_json(ssso, sendobject);
+  sendMessage(ssso.str());
 }
 
 void Wifi::setup() {}
@@ -50,8 +67,5 @@ HyphaBasePlugin *Wifi::getInstance(std::string id) {
   return instance;
 }
 
-void Wifi::receiveMessage(std::string UNUSED(message)) {}
-
 PLUGIN_API POCO_BEGIN_MANIFEST(HyphaBasePlugin)
-POCO_EXPORT_CLASS(Wifi)
-POCO_END_MANIFEST
+    POCO_EXPORT_CLASS(Wifi) POCO_END_MANIFEST

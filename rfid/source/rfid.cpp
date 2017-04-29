@@ -21,15 +21,9 @@
 using namespace hypha::plugin;
 using namespace hypha::plugin::rfid;
 
+RFID::RFID() : serialPort(ioService) {}
 
-RFID::RFID(): serialPort(ioService)
-{
-
-}
-
-RFID::~RFID()
-{
-}
+RFID::~RFID() {}
 
 void RFID::doWork() {
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -58,11 +52,15 @@ void RFID::doWork() {
 }
 
 void RFID::setup() {
-    serialPort.open("/dev/ttyACM0");
-    serialPort.set_option(boost::asio::serial_port::parity(boost::asio::serial_port::parity::none));
-    serialPort.set_option(boost::asio::serial_port::character_size(boost::asio::serial_port::character_size(8)));
-    serialPort.set_option(boost::asio::serial_port::stop_bits(boost::asio::serial_port::stop_bits::one));
-    serialPort.set_option(boost::asio::serial_port::flow_control(boost::asio::serial_port::flow_control::none));
+  serialPort.open("/dev/ttyACM0");
+  serialPort.set_option(
+      boost::asio::serial_port::parity(boost::asio::serial_port::parity::none));
+  serialPort.set_option(boost::asio::serial_port::character_size(
+      boost::asio::serial_port::character_size(8)));
+  serialPort.set_option(boost::asio::serial_port::stop_bits(
+      boost::asio::serial_port::stop_bits::one));
+  serialPort.set_option(boost::asio::serial_port::flow_control(
+      boost::asio::serial_port::flow_control::none));
 
   struct termios toptions;
 
@@ -181,5 +179,4 @@ void RFID::setRGY(bool red, bool green, bool yellow) {
 }
 
 PLUGIN_API POCO_BEGIN_MANIFEST(HyphaBasePlugin)
-POCO_EXPORT_CLASS(RFID)
-POCO_END_MANIFEST
+    POCO_EXPORT_CLASS(RFID) POCO_END_MANIFEST

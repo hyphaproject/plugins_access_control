@@ -12,8 +12,8 @@ namespace plugin {
 namespace rfid {
 class RFID : public HyphaSensor {
  public:
-    RFID();
-    ~RFID();
+  RFID();
+  ~RFID();
   void doWork();
   void setup();
   const std::string name() { return "rfid"; }

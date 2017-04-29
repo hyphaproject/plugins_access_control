@@ -1,3 +1,9 @@
+#
+# Library name and options
+#
+
+# Target name
+set(target fingerprintzfm)
 
 #
 # External dependencies
@@ -13,12 +19,7 @@ endif()
 
 find_package(Qt5Core REQUIRED)
 
-#
-# Library name and options
-#
 
-# Target name
-set(target fingerprintzfm)
 
 # Exit here if required dependencies are not met
 message(STATUS "Lib ${target}")

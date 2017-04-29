@@ -64,5 +64,4 @@ HyphaBasePlugin *ExploreNFC::getInstance(std::string id) {
 void ExploreNFC::receiveMessage(std::string UNUSED(message)) {}
 
 PLUGIN_API POCO_BEGIN_MANIFEST(HyphaBasePlugin)
-POCO_EXPORT_CLASS(ExploreNFC)
-POCO_END_MANIFEST
+    POCO_EXPORT_CLASS(ExploreNFC) POCO_END_MANIFEST
