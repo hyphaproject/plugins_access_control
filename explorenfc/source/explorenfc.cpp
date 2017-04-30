@@ -16,7 +16,7 @@ using namespace hypha::plugin::explorenfc;
 void ExploreNFC::doWork() {
   std::this_thread::sleep_for(std::chrono::milliseconds(10));
   QProcess process;
-  process.start("python", QStringList() << "../plugins/explorenfc.py");
+  process.start("python", QStringList() << "plugins/explorenfc.py");
   process.waitForFinished();
   QString output(process.readAllStandardOutput());
   QJsonDocument document;
@@ -34,7 +34,7 @@ void ExploreNFC::setup() {}
 
 std::string ExploreNFC::communicate(std::string UNUSED(message)) {
   QProcess process;
-  process.start("python", QStringList() << "../plugins/explorenfc.py");
+  process.start("python", QStringList() << "plugins/explorenfc.py");
   process.waitForFinished();
   QString output(process.readAllStandardOutput());
   qDebug(output.toStdString().c_str());
