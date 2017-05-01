@@ -5,8 +5,6 @@
 
 # find_package(THIRDPARTY REQUIRED)
 
-find_package(Qt5Core REQUIRED)
-
 #
 # Library name and options
 #
@@ -135,7 +133,6 @@ target_link_libraries(${target}
     ${META_PROJECT_NAME}::plugin
     PUBLIC
     ${DEFAULT_LIBRARIES}
-    Qt5::Core
     INTERFACE
 )
 

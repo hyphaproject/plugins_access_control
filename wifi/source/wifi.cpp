@@ -2,10 +2,10 @@
 
 #include "hypha/plugins/wifi/wifi.h"
 
-#include <boost/property_tree/json_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
 #include <Poco/ClassLibrary.h>
 #include <QtCore/QProcess>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 using namespace hypha::plugin;
 using namespace hypha::plugin::wifi;
