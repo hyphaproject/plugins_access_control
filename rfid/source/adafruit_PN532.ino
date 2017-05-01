@@ -1,27 +1,26 @@
 /**************************************************************************/
-/*! 
-    @file     adafruit_PN532.ino
+/*!
+    @file     iso14443a_uid.pde
     @author   Adafruit Industries, chriamue
   @license  BSD (see license.txt)
 
     This example will attempt to connect to an ISO14443A
     card or tag and retrieve some basic information about it
-    that can be used to determine what type of card it is.   
-   
+    that can be used to determine what type of card it is.
+
     Note that you need the baud rate to be 115200 because we need to print
   out the data and read from the card at the same time!
 
-This is an example sketch for the Adafruit PN532 NFC/RFID breakout boards
-This library works with the Adafruit NFC breakout 
+  This is an example sketch for the Adafruit PN532 NFC/RFID breakout boards
+  This library works with the Adafruit NFC breakout
   ----> https://www.adafruit.com/products/364
-  ----> https://www.adafruit.com/products/789
- 
-Check out the links above for our tutorials and wiring diagrams 
-These chips use SPI or I2C to communicate.
 
-Adafruit invests time and resources providing this open source code, 
-please support Adafruit and open-source hardware by purchasing 
-products from Adafruit!
+  Check out the links above for our tutorials and wiring diagrams
+  These chips use SPI or I2C to communicate.
+
+  Adafruit invests time and resources providing this open source code,
+  please support Adafruit and open-source hardware by purchasing
+  products from Adafruit!
 
 */
 /**************************************************************************/
@@ -29,6 +28,12 @@ products from Adafruit!
 #include <SPI.h>
 #include <Adafruit_PN532.h>
 #include <ArduinoJson.h>
+
+#define ledRed 7
+#define ledGreen 6
+#define beepPin 5
+
+#define PN532DEBUG 0
 
 // If using the breakout with SPI, define the pins for SPI communication.
 #define PN532_SCK  (2)
@@ -59,14 +64,32 @@ Adafruit_PN532 nfc(PN532_IRQ, PN532_RESET);
 #if defined(ARDUINO_ARCH_SAMD)
 // for Zero, output on USB Serial console, remove line below if using programming port to program the Zero!
 // also change #define in Adafruit_PN532.cpp library file
-   #define Serial SerialUSB
+#define Serial SerialUSB
 #endif
 
+String inputString = "";         // a string to hold incoming data
+boolean stringComplete = false;  // whether the string is complete
+
 void setup(void) {
-  #ifndef ESP8266
-    while (!Serial); // for Leonardo/Micro/Zero
-  #endif
+#ifndef ESP8266
+  while (!Serial); // for Leonardo/Micro/Zero
+#endif
   Serial.begin(115200);
+
+  pinMode(LED_BUILTIN, OUTPUT);
+  inputString.reserve(200);
+
+  pinMode(beepPin, OUTPUT);
+  pinMode(ledRed, OUTPUT);
+  pinMode(ledGreen, OUTPUT);
+
+  
+  beep(200);
+  digitalWrite(ledRed, HIGH);
+  digitalWrite(ledGreen, HIGH);
+  delay(1000);
+  digitalWrite(ledRed, LOW);
+  digitalWrite(ledGreen, LOW);
 
   nfc.begin();
 
@@ -75,46 +98,112 @@ void setup(void) {
     Serial.print("{ \"error\":\"Didn't find PN53x board\" }");
     while (1); // halt
   }
-  
+
   // Got ok data, print it out!
   Serial.println("{ \"comment\":\"Found chip PN5\" }");
-  
+
   // Set the max number of retry attempts to read from a card
   // This prevents us from waiting forever for a card, which is
   // the default behaviour of the PN532.
   nfc.setPassiveActivationRetries(0xFF);
-  
+
   // configure board to read RFID tags
   nfc.SAMConfig();
-  
+
   Serial.println("{ \"comment\":\"Waiting for an ISO14443A card\" }");
 }
 
 void loop(void) {
+
+  parseString();
+  ping();
+}
+
+void ping() {
   boolean success;
   uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };  // Buffer to store the returned UID
   uint8_t uidLength;        // Length of the UID (4 or 7 bytes depending on ISO14443A card type)
-  
+
   // Wait for an ISO14443A type cards (Mifare, etc.).  When one is found
   // 'uid' will be populated with the UID, and uidLength will indicate
   // if the uid is 4 bytes (Mifare Classic) or 7 bytes (Mifare Ultralight)
-  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, &uid[0], &uidLength);
-  
+  success = nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, &uid[0], &uidLength,25);
+
   if (success) {
     Serial.print("{ \"device\":\"rfid\", \"uid\":\"");
-    for (uint8_t i=0; i < uidLength; i++) 
+    for (uint8_t i = 0; i < uidLength; i++)
     {
       // if(i>0) Serial.print(":");
       if (uid[i] < 16) Serial.print('0');
-      Serial.print(uid[i], HEX); 
+      Serial.print(uid[i], HEX);
     }
     Serial.println("\" }");
-  // Wait 1 second before continuing
-  delay(1000);
+    // Wait 1 second before continuing
+    delay(100);
   }
   else
   {
     // PN532 probably timed out waiting for a card
-    Serial.println("{ \"warning\":\"Timed out waiting for a card\" }");
+    //Serial.println("Timed out waiting for a card");
   }
+}
+
+/*
+  SerialEvent occurs whenever a new data comes in the
+  hardware serial RX.  This routine is run between each
+  time loop() runs, so using delay inside loop can delay
+  response.  Multiple bytes of data may be available.
+*/
+void serialEvent() {
+  while (Serial.available() && !stringComplete) {
+    // get the new byte:
+    char inChar = (char)Serial.read();
+    // add it to the inputString:
+    inputString += inChar;
+    // if the incoming character is a newline, set a flag
+    // so the main loop can do something about it:
+    if (inChar == '\n') {
+      stringComplete = true;
+      //parseString();
+    }
+  }
+}
+
+void parseString() {
+  if (stringComplete) {
+    DynamicJsonBuffer jsonBuffer;
+    JsonObject& root = jsonBuffer.parseObject(inputString);
+    bool red = root["red"];
+    bool green = root["green"];
+    bool yellow = root["yellow"];
+    bool beepV = root["beep"];
+
+    if(red){
+      digitalWrite(ledRed, HIGH);
+    }else{
+      digitalWrite(ledRed, LOW);
+    }
+    if(green){
+      digitalWrite(ledGreen, HIGH);
+    }else{
+      digitalWrite(ledGreen, LOW);
+    }
+    if (beepV) {
+      beep(200);
+    }
+    // Serial.println(beepV);
+    // Serial.println(inputString);
+    // clear the string:
+    inputString = "";
+    stringComplete = false;
+  }
+}
+
+// source: http://www.hobbytronics.co.uk/arduino-tutorial7-piezo-beep
+void beep(unsigned char delayms) {
+  analogWrite(beepPin, 20);      // Almost any value can be used except 0 and 255
+  // experiment to get the best tone
+  delay(delayms);          // wait for a delayms ms
+  analogWrite(beepPin, 0);       // 0 turns it off
+  delay(delayms);          // wait for a delayms ms
 }

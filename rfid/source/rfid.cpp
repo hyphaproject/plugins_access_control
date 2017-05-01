@@ -31,9 +31,20 @@ void RFID::doWork() {
     int length = serialPort.read_some(
         boost::asio::buffer(read_buf_raw_, SERIAL_PORT_READ_BUF_SIZE));
     std::string readString(read_buf_raw_, length);
-    Logger::warning(readString);
-    beep();
-    std::this_thread::sleep_for(std::chrono::seconds(2));
+
+    boost::property_tree::ptree ptjson;
+    std::stringstream ssjson(readString);
+    boost::property_tree::read_json(ssjson, ptjson);
+
+    if (ptjson.get_optional<std::string>("uid")) {
+      beep();
+      std::this_thread::sleep_for(std::chrono::milliseconds(100));
+      Logger::warning(readString);
+      setRGY(false, true, false);
+      std::this_thread::sleep_for(std::chrono::seconds(2));
+      setRGY(false, false, false);
+    }
+
   } catch (std::exception &e) {
     // skip end of file error.
     if (std::strcmp(e.what(), "read_some: End of file") > 0) {
@@ -44,20 +55,24 @@ void RFID::doWork() {
 }
 
 void RFID::setup() {
-  serialPort = boost::asio::serial_port(ioService);
-  serialPort.open("/dev/ttyACM0");
-  serialPort.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
-  serialPort.set_option(
-      boost::asio::serial_port::parity(boost::asio::serial_port::parity::none));
-  serialPort.set_option(boost::asio::serial_port::character_size(
-      boost::asio::serial_port::character_size(8)));
-  serialPort.set_option(boost::asio::serial_port::stop_bits(
-      boost::asio::serial_port::stop_bits::one));
-  serialPort.set_option(boost::asio::serial_port::flow_control(
-      boost::asio::serial_port::flow_control::none));
+  try {
+    serialPort = boost::asio::serial_port(ioService);
+    serialPort.open("/dev/ttyACM0");
+    serialPort.set_option(boost::asio::serial_port_base::baud_rate(baud_rate));
+    serialPort.set_option(boost::asio::serial_port::parity(
+        boost::asio::serial_port::parity::none));
+    serialPort.set_option(boost::asio::serial_port::character_size(
+        boost::asio::serial_port::character_size(8)));
+    serialPort.set_option(boost::asio::serial_port::stop_bits(
+        boost::asio::serial_port::stop_bits::one));
+    serialPort.set_option(boost::asio::serial_port::flow_control(
+        boost::asio::serial_port::flow_control::none));
 
-  std::string s = "{ \"beep\":true }";
-  serialPort.write_some(boost::asio::buffer(s));
+    std::string s = "{ \"beep\":\"true\" }";
+    serialPort.write_some(boost::asio::buffer(s));
+  } catch (std::exception &e) {
+    Logger::error(e.what());
+  }
 }
 
 std::string RFID::communicate(std::string UNUSED(message)) {
@@ -123,18 +138,23 @@ void RFID::receiveMessage(std::string message) {
 }
 
 void RFID::beep() {
-  std::string s = "{ \"beep\":true }";
-  serialPort.write_some(boost::asio::buffer(s));
+  boost::property_tree::ptree sendobject;
+  sendobject.put("beep", "true");
+  std::stringstream ssso;
+  boost::property_tree::write_json(ssso, sendobject, false);
+  std::string outStr(ssso.str() + "\n");
+  serialPort.write_some(boost::asio::buffer(outStr));
 }
 
 void RFID::setRGY(bool red, bool green, bool yellow) {
   boost::property_tree::ptree sendobject;
-  sendobject.put("red", red);
-  sendobject.put("green", green);
-  sendobject.put("yellow", yellow);
+  sendobject.put("red", red?"true":"false");
+  sendobject.put("green", green?"true":"false");
+  sendobject.put("yellow", yellow?"true":"false");
   std::stringstream ssso;
-  boost::property_tree::write_json(ssso, sendobject);
-  sendMessage(ssso.str());
+  boost::property_tree::write_json(ssso, sendobject, false);
+  std::string outStr(ssso.str() + "\n");
+  serialPort.write_some(boost::asio::buffer(outStr));
 }
 
 PLUGIN_API POCO_BEGIN_MANIFEST(HyphaBasePlugin)
