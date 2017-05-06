@@ -148,9 +148,9 @@ void RFID::beep() {
 
 void RFID::setRGY(bool red, bool green, bool yellow) {
   boost::property_tree::ptree sendobject;
-  sendobject.put("red", red?"true":"false");
-  sendobject.put("green", green?"true":"false");
-  sendobject.put("yellow", yellow?"true":"false");
+  sendobject.put("red", red ? "true" : "false");
+  sendobject.put("green", green ? "true" : "false");
+  sendobject.put("yellow", yellow ? "true" : "false");
   std::stringstream ssso;
   boost::property_tree::write_json(ssso, sendobject, false);
   std::string outStr(ssso.str() + "\n");

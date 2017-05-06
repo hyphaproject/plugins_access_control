@@ -1,0 +1,3 @@
+[submodule "fingerprintzfm/Adafruit-ZFM-lib"]
+	path = fingerprintzfm/Adafruit-ZFM-lib
+	url = https://github.com/FalseCAM/Adafruit-ZFM-lib.git

@@ -1,34 +1,38 @@
-// Copyright (c) 2015-2016 Hypha
+// Copyright (c) 2015-2017 Hypha
 
 #ifndef FINGERPRINTZFM_H
 #define FINGERPRINTZFM_H
 
 #include <iostream>
 
-#include "AdafruitZFM/ZFMComm.h"
+#include <ZFMComm.h>
+#include <boost/asio.hpp>
 
-#include <hypha/plugin/hyphaplugin.h>
+#include <hypha/plugin/hyphaactor.h>
+#include <hypha/plugin/hyphasensor.h>
+
 namespace hypha {
 namespace plugin {
 namespace fingerprintzfm {
-class FingerPrintZFM : public HyphaPlugin {
+
+class FingerPrintZFM : public HyphaSensor, public HyphaActor {
  public:
   enum State { IDLE, SCANNING, PROGRAMMING };
-  void doWork();
-  void setup();
-  std::string communicate(std::string message);
-  const std::string name() { return "fingerprintzfm"; }
-  const std::string getTitle() { return "FingerprintZFM"; }
-  const std::string getVersion() { return "0.1"; }
-  const std::string getDescription() {
+  void doWork() override;
+  void setup() override;
+  std::string communicate(std::string message) override;
+  const std::string name() override { return "fingerprintzfm"; }
+  const std::string getTitle() override { return "FingerprintZFM"; }
+  const std::string getVersion() override { return "0.1"; }
+  const std::string getDescription() override {
     return "Plugin to detect fingerprint with adafruit zfm.";
   }
-  const std::string getConfigDescription() { return "{}"; }
-  void loadConfig(std::string json);
-  std::string getConfig();
-  HyphaPlugin *getInstance(std::string id);
+  const std::string getConfigDescription() override { return "{}"; }
+  void loadConfig(std::string json) override;
+  std::string getConfig() override;
+  HyphaBasePlugin *getInstance(std::string id) override;
 
-  void receiveMessage(std::string message);
+  void receiveMessage(std::string message) override;
 
   std::string getUsername(std::string fingerprintid);
   void createDatabase();

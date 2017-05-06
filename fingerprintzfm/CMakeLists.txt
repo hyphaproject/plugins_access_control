@@ -11,15 +11,11 @@ set(target fingerprintzfm)
 
 # find_package(THIRDPARTY REQUIRED)
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/include/AdafruitZFM/ZFM_CONST.h")
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/Adafruit-ZFM-lib/ZFM_CONST.h")
 else()
   message(WARNING "${target} cannot be build because Adafruit lib is not available. Please run 'git submodule update --init --recursive'")
   return()
 endif()
-
-find_package(Qt5Core REQUIRED)
-
-
 
 # Exit here if required dependencies are not met
 message(STATUS "Lib ${target}")
@@ -42,13 +38,12 @@ set(source_path  "${CMAKE_CURRENT_SOURCE_DIR}/source")
 
 set(headers
 ${include_path}/${target}.h
-${CMAKE_CURRENT_SOURCE_DIR}/include/AdafruitZFM/ZFMComm.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/include/AdafruitZFM/ZFM_CONST.h
+${CMAKE_CURRENT_SOURCE_DIR}/Adafruit-ZFM-lib/ZFM_CONST.h
 )
 
 set(sources
 ${source_path}/${target}.cpp
-${CMAKE_CURRENT_SOURCE_DIR}/include/AdafruitZFM/ZFMComm.cpp
+${CMAKE_CURRENT_SOURCE_DIR}/Adafruit-ZFM-lib/ZFMComm.cpp
 )
 
 # Group source files
@@ -123,6 +118,7 @@ target_include_directories(${target}
     PRIVATE
     ${PROJECT_BINARY_DIR}/source/include
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/Adafruit-ZFM-lib
     ${CMAKE_CURRENT_BINARY_DIR}/include
 
     PUBLIC
@@ -146,7 +142,6 @@ target_link_libraries(${target}
     ${META_PROJECT_NAME}::plugin
     PUBLIC
     ${DEFAULT_LIBRARIES}
-    Qt5::Core
     INTERFACE
 )
 

@@ -1,18 +1,15 @@
-// Copyright (c) 2015-2016 Hypha
+// Copyright (c) 2015-2017 Hypha
 
-#include "hyphaplugins/fingerprintzfm/fingerprintzfm.h"
+#include "hypha/plugins/fingerprintzfm/fingerprintzfm.h"
 
 #include <Poco/ClassLibrary.h>
-
-#include <QtCore/QJsonArray>
-#include <QtCore/QJsonDocument>
-#include <QtCore/QJsonObject>
-#include <QtCore/QProcess>
-#include <QtCore/QVariant>
-#include <QtSerialPort/QSerialPortInfo>
+#include <Poco/Process.h>
+#include <boost/property_tree/json_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
 
 #include <hypha/core/database/database.h>
-#include <hypha/plugin/hyphaplugin.h>
+#include <hypha/core/settings/databasesettings.h>
+#include <hypha/plugin/hyphabaseplugin.h>
 #include <hypha/utils/logger.h>
 
 using namespace hypha::utils;
@@ -40,10 +37,15 @@ void FingerPrintZFM::setup() {
   storecount = 12;
   state = IDLE;
   createDatabase();
-  QProcess process;
-  process.execute("stty -F " + QString::fromStdString(usbPort) +
-                  " 0:4:1cb1:0:3:1c:7f:15:4:0:0:0:11:13:1a:0:12:f:17:16:0:0:0:"
-                  "0:0:0:0:0:0:0:0:0:0:0:0:0");
+
+  std::string cmd("stty");
+  std::vector<std::string> args;
+  args.push_back("-F");
+  args.push_back(usbPort);
+  args.push_back(
+      "0:4:1cb1:0:3:1c:7f:15:4:0:0:0:11:13:1a:0:12:f:17:16:0:0:0:"
+      "0:0:0:0:0:0:0:0:0:0:0:0:0");
+  Poco::Process::launch(cmd, args);
   fp = ZFMComm();
   fp.init(strdup(usbPort.c_str()));
 }
@@ -54,17 +56,18 @@ std::string FingerPrintZFM::communicate(std::string message) {
 
 void FingerPrintZFM::loadConfig(std::string json) {
   usbPort = "/dev/ttyUSB0";
-  QJsonDocument document =
-      QJsonDocument::fromJson(QString::fromStdString(json).toUtf8());
-  QJsonObject object = document.object();
-  if (object.contains("usbport")) {
-    usbPort = object.value("usbport").toString().toStdString();
+
+  boost::property_tree::ptree ptjson;
+  std::stringstream ssjson(json);
+  boost::property_tree::read_json(ssjson, ptjson);
+  if (ptjson.get_optional<std::string>("usbport")) {
+    usbPort = ptjson.get<std::string>("usbport");
   }
 }
 
 std::string FingerPrintZFM::getConfig() { return "{}"; }
 
-hypha::plugin::HyphaPlugin *FingerPrintZFM::getInstance(std::string id) {
+hypha::plugin::HyphaBasePlugin *FingerPrintZFM::getInstance(std::string id) {
   FingerPrintZFM *instance = new FingerPrintZFM();
   instance->setId(id);
   return instance;
@@ -72,10 +75,11 @@ hypha::plugin::HyphaPlugin *FingerPrintZFM::getInstance(std::string id) {
 
 void FingerPrintZFM::receiveMessage(std::string message) {
   if (message.length() > 0) {
-    QJsonDocument document = QJsonDocument::fromJson(message.c_str());
-    QJsonObject object = document.object();
-    if (object.contains("state")) {
-      std::string state = object.value("state").toString().toStdString();
+    boost::property_tree::ptree ptjson;
+    std::stringstream ssjson(message);
+    boost::property_tree::read_json(ssjson, ptjson);
+    if (ptjson.get_optional<std::string>("state")) {
+      std::string state = ptjson.get<std::string>("state");
       if (state == "SCANNING") {
         this->state = SCANNING;
       } else if (state == "PROGRAMMING") {
@@ -96,14 +100,29 @@ std::string FingerPrintZFM::getUsername(std::string fingerprintid) {
 }
 
 void FingerPrintZFM::createDatabase() {
-  Poco::Data::Statement statement = Database::instance()->getStatement();
-  statement << "CREATE TABLE IF NOT EXISTS fingerprint ("
-               "`id` int(11) NOT NULL AUTO_INCREMENT,"
-               "username varchar(32) NOT NULL,"
-               "fingerprintid varchar(32) NOT NULL,"
-               "PRIMARY KEY (id)"
-               ") DEFAULT CHARSET=utf8;";
-  statement.execute();
+  try {
+    Poco::Data::Statement statement = Database::instance()->getStatement();
+    hypha::utils::Logger::warning(
+        hypha::settings::DatabaseSettings::instance()->getDatabase());
+    if (hypha::settings::DatabaseSettings::instance()->getDriver() ==
+        "SQLite") {
+      statement << "CREATE TABLE IF NOT EXISTS `fingerprint` ("
+                   "`id` INTEGER PRIMARY KEY AUTOINCREMENT, "
+                   "username varchar(32) NOT NULL,"
+                   "fingerprintid varchar(32) NOT NULL"
+                   ");";
+    } else {
+      statement << "CREATE TABLE IF NOT EXISTS `fingerprint` ("
+                   "`id` int(11) NOT NULL AUTO_INCREMENT,"
+                   "username varchar(32) NOT NULL,"
+                   "fingerprintid varchar(32) NOT NULL,"
+                   "PRIMARY KEY (id)"
+                   ") DEFAULT CHARSET=utf8;";
+    }
+    statement.execute();
+  } catch (std::exception &e) {
+    hypha::utils::Logger::error(e.what());
+  }
 }
 
 void FingerPrintZFM::storeFingerprint(std::string fingerprintid) {
@@ -148,7 +167,7 @@ void FingerPrintZFM::programming() {
     if (getUsername(getId() + std::to_string(storecount)).empty()) {
       if (fp.storeFingerprint(storecount)) {
         storeFingerprint(getId().append(std::to_string(storecount)));
-        qDebug("Successfully stored your fingerprint !");
+        hypha::utils::Logger::info("Successfully stored your fingerprint !");
         sendMessage("{\"say\":\"Successfully stored your fingerprint !\"}");
         return;
       }
@@ -158,7 +177,7 @@ void FingerPrintZFM::programming() {
 }
 
 void FingerPrintZFM::scanning() {
-  qDebug("scanning");
+    hypha::utils::Logger::info("fingerprint: scanning");
   for (int i = 0; i < 10; ++i) {
     bool ret = false;
     while (!ret) {
@@ -177,6 +196,5 @@ void FingerPrintZFM::scanning() {
   }
 }
 
-POCO_BEGIN_MANIFEST(HyphaPlugin)
-POCO_EXPORT_CLASS(FingerPrintZFM)
-POCO_END_MANIFEST
+PLUGIN_API POCO_BEGIN_MANIFEST(HyphaBasePlugin)
+    POCO_EXPORT_CLASS(FingerPrintZFM) POCO_END_MANIFEST
