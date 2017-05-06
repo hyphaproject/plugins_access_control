@@ -177,7 +177,7 @@ void FingerPrintZFM::programming() {
 }
 
 void FingerPrintZFM::scanning() {
-    hypha::utils::Logger::info("fingerprint: scanning");
+  hypha::utils::Logger::info("fingerprint: scanning");
   for (int i = 0; i < 10; ++i) {
     bool ret = false;
     while (!ret) {

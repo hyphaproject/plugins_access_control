@@ -27,7 +27,14 @@ class FingerPrintZFM : public HyphaSensor, public HyphaActor {
   const std::string getDescription() override {
     return "Plugin to detect fingerprint with adafruit zfm.";
   }
-  const std::string getConfigDescription() override { return "{}"; }
+  const std::string getConfigDescription() override {
+    return "{"
+           "\"confdesc\":["
+           "{\"name\":\"usbport\", "
+           "\"type\":\"string\",\"value\":\"/dev/"
+           "ttyUSB0\",\"description\":\"Serial Port of fingerprint device.\"}"
+           "]}";
+  }
   void loadConfig(std::string json) override;
   std::string getConfig() override;
   HyphaBasePlugin *getInstance(std::string id) override;
