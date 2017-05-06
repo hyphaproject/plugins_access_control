@@ -11,14 +11,6 @@ set(target wifi)
 
 # find_package(THIRDPARTY REQUIRED)
 
-find_package(Qt5Core)
-if(Qt5Core_FOUND)
-else()
-  message(WARNING "${target} cannot be build because Qt5Core cannot be found.")
-  return()
-endif()
-
-
 # Exit here if required dependencies are not met
 message(STATUS "Lib ${target}")
 
@@ -141,7 +133,6 @@ target_link_libraries(${target}
     ${META_PROJECT_NAME}::plugin
     PUBLIC
     ${DEFAULT_LIBRARIES}
-    Qt5::Core
     INTERFACE
 )
 

@@ -19,12 +19,22 @@ class Wifi : public HyphaSensor {
   const std::string getDescription() override {
     return "Plugin to scan for mac adresses in the network.";
   }
-  const std::string getConfigDescription() override { return "{}"; }
+  const std::string getConfigDescription() override {
+    return "{"
+           "\"confdesc\":["
+           "{\"name\":\"wifidevice\", "
+           "\"type\":\"string\",\"value\":\"wlan0\",\"description\":\"The wifi "
+           "device name. Find out with command 'ifconfig'.\"}"
+           "]}";
+  }
   void loadConfig(std::string json) override;
   std::string getConfig() override;
   HyphaBasePlugin *getInstance(std::string id) override;
 
   std::string communicate(std::string message) override;
+
+ protected:
+  std::string wifidevice = "wlan0";
 };
 }
 }

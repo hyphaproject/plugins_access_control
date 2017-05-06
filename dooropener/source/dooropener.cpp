@@ -171,6 +171,7 @@ bool DoorOpener::accessAllowed(std::string user) {
         switch (now.dayOfWeek()) {
           case 0:
             if (type != "workingsun") return false;
+            break;
           case 1:
             if (type != "workingmon") return false;
             break;
@@ -188,8 +189,6 @@ bool DoorOpener::accessAllowed(std::string user) {
             break;
           case 6:
             if (type != "workingsat") return false;
-            break;
-
             break;
           default:
             break;
@@ -234,5 +233,5 @@ void DoorOpener::createDatabase() {
   }
 }
 
-PLUGIN_API POCO_BEGIN_MANIFEST(HyphaHandler)
+PLUGIN_API POCO_BEGIN_MANIFEST(HyphaBasePlugin)
     POCO_EXPORT_CLASS(DoorOpener) POCO_END_MANIFEST
