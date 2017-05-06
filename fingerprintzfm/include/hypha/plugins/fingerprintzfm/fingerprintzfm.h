@@ -52,7 +52,7 @@ class FingerPrintZFM : public HyphaSensor, public HyphaActor {
  private:
   std::string usbPort;
   ZFMComm fp;
-  State state;
+  State state = IDLE;
   int storecount;
 };
 }

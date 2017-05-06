@@ -35,7 +35,7 @@ void FingerPrintZFM::doWork() {
 
 void FingerPrintZFM::setup() {
   storecount = 12;
-  state = IDLE;
+  state = SCANNING;
   createDatabase();
 
   std::string cmd("stty");
@@ -102,8 +102,6 @@ std::string FingerPrintZFM::getUsername(std::string fingerprintid) {
 void FingerPrintZFM::createDatabase() {
   try {
     Poco::Data::Statement statement = Database::instance()->getStatement();
-    hypha::utils::Logger::warning(
-        hypha::settings::DatabaseSettings::instance()->getDatabase());
     if (hypha::settings::DatabaseSettings::instance()->getDriver() ==
         "SQLite") {
       statement << "CREATE TABLE IF NOT EXISTS `fingerprint` ("
